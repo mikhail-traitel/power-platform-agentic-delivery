@@ -1,0 +1,415 @@
+# Power Platform constraint catalog (public, generic)
+#
+# A curated list of hard platform constraints that designs commonly violate or silently ignore.
+# Every entry is public, documented Microsoft Power Platform behavior - NOT specific to any project.
+# The platform reviewer's constraint-coverage pass reads this to check what a design FAILS to address.
+#
+# Fields:
+#   id                     - stable key; used as `platform_term` on findings
+#   domain                 - canvas | model-driven | dataverse | sharepoint | power-automate | plugins | alm | security | licensing
+#   title                  - short name
+#   constraint             - the rule, in one or two sentences
+#   why_it_bites            - the failure mode when ignored (often silent)
+#   severity_when_silent   - severity if a relevant design does not address it
+#   severity_when_violated - severity if the design actively violates it
+#   source                 - Microsoft Learn topic (verify exact numbers against current docs)
+#
+# See catalog/README.md for the sourcing note. Numbers are the documented defaults at time of writing;
+# treat them as "check the current MS Learn value," not gospel.
+
+constraints:
+  - id: canvas-delegation-limit
+    domain: canvas
+    title: Delegation limit on non-delegable queries
+    constraint: >
+      A non-delegable query against a large data source returns only the first N rows (default 500,
+      configurable up to 2000), not the full result. Power Fx pushes delegable operations to the
+      source and processes the rest locally on that capped set.
+    why_it_bites: >
+      On a data source larger than the cap the app silently shows a partial set. The result is wrong,
+      not merely slow, and there may be no delegation warning if the non-delegable part is buried in a
+      function argument.
+    severity_when_silent: major
+    severity_when_violated: critical
+    source: "MS Learn: Understand delegation in a canvas app (power-apps/maker/canvas-apps/delegation-overview)"
+
+  - id: canvas-gallery-virtualization
+    domain: canvas
+    title: Galleries virtualize their rows
+    constraint: >
+      A canvas gallery renders only the visible items; not all rows exist in the DOM at once. Use the
+      gallery's item count property for totals, not a count of rendered controls.
+    why_it_bites: >
+      Tests or logic that count rendered rows undercount. Full-set assertions must read the true item
+      count (and, in E2E tests, scroll-to-end).
+    severity_when_silent: minor
+    severity_when_violated: major
+    source: "MS Learn: Show a list of items (Gallery control) (power-apps/maker/canvas-apps/controls/control-gallery)"
+
+  - id: powerfx-named-formula-readonly
+    domain: canvas
+    title: Named formulas are read-only
+    constraint: >
+      A Power Fx named formula is a recomputed value, not a variable. You cannot Set() it. Use it for
+      derived values; use Set()/collections for mutable state.
+    why_it_bites: A design that treats a named formula as writable state will not build.
+    severity_when_silent: minor
+    severity_when_violated: major
+    source: "MS Learn: Named formulas (power-platform/power-fx/reference/named-formulas)"
+
+  - id: dataverse-text-length
+    domain: dataverse
+    title: Single-line text maximum length
+    constraint: >
+      A single-line-of-text column has a maximum length (default 100, configurable up to 4000). A
+      write beyond the configured length is truncated.
+    why_it_bites: >
+      A column left at a small default silently truncates longer values on write - data loss with no
+      error.
+    severity_when_silent: major
+    severity_when_violated: major
+    source: "MS Learn: Types of columns (power-apps/maker/data-platform/types-of-fields)"
+
+  - id: dataverse-plugin-timeout
+    domain: plugins
+    title: Synchronous plugin execution budget
+    constraint: >
+      A sandboxed plugin step must complete within the platform time limit (about 2 minutes).
+      Long-running work must be moved to an asynchronous process.
+    why_it_bites: A synchronous plugin doing heavy work times out and rolls back the operation.
+    severity_when_silent: major
+    severity_when_violated: critical
+    source: "MS Learn: Plug-in isolation, trusts, and statistics (power-apps/developer/data-platform/plug-in-isolation-trusts-statistics)"
+
+  - id: dataverse-plugin-stateless
+    domain: plugins
+    title: Plugins must be stateless
+    constraint: >
+      The platform caches and reuses plugin instances across invocations and threads. Instance fields
+      are not per-request state.
+    why_it_bites: Storing request state in a field causes cross-request bleed and race conditions under load.
+    severity_when_silent: major
+    severity_when_violated: critical
+    source: "MS Learn: Write a plug-in (power-apps/developer/data-platform/write-plug-in)"
+
+  - id: mda-xrm-page-deprecated
+    domain: model-driven
+    title: Xrm.Page is deprecated
+    constraint: >
+      The global Xrm.Page is deprecated. Obtain the form context from the passed-in execution context
+      via getFormContext().
+    why_it_bites: New code on Xrm.Page carries a removed-API risk and breaks context isolation.
+    severity_when_silent: minor
+    severity_when_violated: major
+    source: "MS Learn: Xrm.Page (deprecated) (power-apps/developer/model-driven-apps/clientapi/reference/xrm-page)"
+
+  - id: sharepoint-view-threshold
+    domain: sharepoint
+    title: List view threshold (5000 items)
+    constraint: >
+      SharePoint enforces a list view threshold (5000 items). Queries that are not covered by an index
+      and would scan beyond the threshold are throttled.
+    why_it_bites: >
+      A filter on an unindexed column against a large list fails or returns nothing once the list
+      grows past the threshold - it works in dev and breaks in production.
+    severity_when_silent: major
+    severity_when_violated: major
+    source: "MS Learn / SharePoint: Manage large lists and libraries (sharepoint list view threshold)"
+
+  - id: sharepoint-internal-name-truncation
+    domain: sharepoint
+    title: Internal column name truncation (32 chars)
+    constraint: >
+      SharePoint derives a column's internal name from its display name and truncates it to 32
+      characters. Two long display names can collide on the same internal name.
+    why_it_bites: >
+      Code/queries that reference an assumed internal name silently target the wrong column, or a
+      provisioning step collides - discovered late, often after a rebuild.
+    severity_when_silent: major
+    severity_when_violated: major
+    source: "MS Learn / SharePoint: Column and field naming (internal name generation)"
+
+  - id: dataverse-file-chunk-upload
+    domain: dataverse
+    title: Large file upload must be chunked
+    constraint: >
+      Uploading a file/image larger than the single-request limit (about 4 MB) to Dataverse via the
+      Web API requires the chunked upload pattern.
+    why_it_bites: A single-shot upload of a large file fails; the design must plan the chunked flow.
+    severity_when_silent: minor
+    severity_when_violated: major
+    source: "MS Learn: Upload or download file data (power-apps/developer/data-platform/file-column-data)"
+
+  - id: flow-pagination-default-off
+    domain: power-automate
+    title: Pagination is off by default
+    constraint: >
+      Many list/get actions in a cloud flow return only the first page unless pagination is explicitly
+      enabled (up to the connector's threshold).
+    why_it_bites: A flow silently processes only the first page of a large result set.
+    severity_when_silent: major
+    severity_when_violated: major
+    source: "MS Learn: Get more data with pagination (power-automate pagination)"
+
+  - id: flow-sync-enforcement-lag
+    domain: power-automate
+    title: Flows are asynchronous - not for hard invariants
+    constraint: >
+      A cloud flow runs asynchronously after the triggering write. It cannot guarantee a rule is true
+      at write time. Synchronous invariants belong in a plugin/business rule.
+    why_it_bites: A design that relies on a flow to enforce a mandatory rule has a race window.
+    severity_when_silent: major
+    severity_when_violated: major
+    source: "MS Learn: When to use plug-ins vs flows (power-apps/developer/data-platform/plug-ins)"
+
+  # --- Architect-level / non-obvious constraints (Dataverse platform, ALM, security, licensing) ---
+  # Each verified against current Microsoft Learn; numbers are documented defaults at time of writing.
+
+  - id: dataverse-service-protection-limits
+    domain: dataverse
+    title: Service protection (429) throttling limits
+    constraint: >
+      Every user is throttled per web server on three independent facets, each returning HTTP 429 with
+      a Retry-After header: about 6,000 requests and about 20 minutes (1,200s) of execution time over a
+      5-minute sliding window, plus about 52 concurrent requests. These are documented defaults that
+      vary by environment and server count - treat them as approximate, not a budget to hit.
+    why_it_bites: >
+      Bulk and service-principal clients funnel all traffic through one user, so the per-user limit
+      hits long before raw volume suggests. Batching around the request count just loads the
+      execution-time limit instead; a retry that ignores Retry-After extends the penalty; and a client
+      that swallows the 429 drops records mid-job with no error.
+    severity_when_silent: major
+    severity_when_violated: critical
+    source: "MS Learn: Service protection API limits (power-apps/developer/data-platform/api-limits)"
+
+  - id: dataverse-executemultiple-batch
+    domain: dataverse
+    title: ExecuteMultiple batch cap and ContinueOnError abandonment
+    constraint: >
+      ExecuteMultiple (SDK) and OData $batch (Web API) accept at most ~1,000 requests per batch
+      (documented default; deployment-configurable). Over the cap the whole batch faults before any
+      request runs. ContinueOnError defaults to false, so a fault on one request skips every request
+      after it.
+    why_it_bites: >
+      With the default ContinueOnError=false, a fault partway through silently abandons the rest of the
+      batch; a loader that only watches for a thrown exception logs success while rows were dropped.
+      CreateMultiple/UpdateMultiple do not rescue it: they have no ContinueOnError, and on standard
+      tables any single error rolls the whole operation back (partial success only on elastic tables).
+    severity_when_silent: major
+    severity_when_violated: critical
+    source: "MS Learn: Execute multiple requests using the SDK for .NET (power-apps/developer/data-platform/org-service/execute-multiple-requests)"
+
+  - id: plugins-execution-depth
+    domain: plugins
+    title: Execution-depth infinite-loop guard (depth 8)
+    constraint: >
+      Dataverse increments an execution Depth counter each time a running plug-in or workflow triggers
+      another. At the maximum depth within the time window (documented defaults: depth 8, one hour;
+      both configurable) the platform treats it as an infinite loop, aborts, and rolls back the
+      transaction. Microsoft Learn says to take no dependency on the Depth value.
+    why_it_bites: >
+      A step that updates a record which re-fires the same step passes a single manual edit but aborts
+      mid-operation once bulk load or a cascade drives depth to the limit, rolling back the user's save.
+      The common "fix" is silent and worse: gating on `Depth > 1` skips legitimate executions that reach
+      depth > 1 by another path (import, cascade, another plug-in), so records are quietly not updated.
+    severity_when_silent: major
+    severity_when_violated: critical
+    source: "MS Learn: IExecutionContext.Depth Property (dotnet/api/microsoft.xrm.sdk.iexecutioncontext.depth)"
+
+  - id: dataverse-rollup-async
+    domain: dataverse
+    title: Rollup columns recalculate asynchronously, not on write
+    constraint: >
+      Rollup columns are computed by scheduled asynchronous system jobs, not on each write. The mass
+      recalculation runs about 12 hours after the column changes and the incremental job defaults to a
+      ~1-hour minimum (admin-configurable). Between runs the stored value is stale, and rollups cannot
+      trigger a workflow or satisfy a wait condition.
+    why_it_bites: >
+      A design that treats a rollup as a real-time value - validating against it in a plug-in, gating a
+      workflow, feeding a calculated column, showing a "live" total - acts on a number that can be hours
+      old, with no error. The manual form Recalculate is capped (50,000 related rows, hierarchy depth
+      10) and cannot be relied on by server logic.
+    severity_when_silent: major
+    severity_when_violated: critical
+    source: "MS Learn: Define rollup columns with Power Apps (power-apps/maker/data-platform/define-rollup-fields)"
+
+  - id: dataverse-nn-no-attributes
+    domain: dataverse
+    title: Native N:N intersect table cannot hold attributes
+    constraint: >
+      A native many-to-many relationship stores links in a system intersect table that holds only the
+      two foreign keys - you cannot add columns to it. To attach any attribute to the relationship (a
+      role, a date, a status) you must model a manual intersect: a custom junction table with two
+      lookups to the related tables.
+    why_it_bites: >
+      Teams pick the one-click native N:N, then hit a wall when the link must carry one field. There is
+      no built-in conversion, so retrofitting means a new junction table plus migrating live association
+      data. The manual pattern has its own trap: if the two lookups do not cascade-delete, deleting a
+      parent leaves orphan junction rows.
+    severity_when_silent: major
+    severity_when_violated: major
+    source: "MS Learn: Create many-to-many table relationships in Microsoft Dataverse (power-apps/maker/data-platform/create-edit-nn-relationships)"
+
+  - id: alm-connection-references-env-vars
+    domain: alm
+    title: Connection references and environment variables bind at import
+    constraint: >
+      Solution-aware flows bind to connections via connection references and read config via
+      environment variables. On import to a new environment, each connection reference needs a real
+      connection and each environment variable a value, or dependent flows fail to turn on. Conversely,
+      a current value left in the solution at export is packaged and carries the source environment's
+      value into the target.
+    why_it_bites: >
+      Two silent modes. On import, one unbound connection reference or unset variable leaves a flow off
+      or reading a stale default - easy to miss clicking through the wizard. On export, a current value
+      not removed first bakes a dev URL/endpoint/secret identifier into the package and overrides the
+      target, so the solution imports cleanly but points at the wrong environment.
+    severity_when_silent: major
+    severity_when_violated: critical
+    source: "MS Learn: Use environment variables in solutions (power-apps/maker/data-platform/environmentvariables); Use a connection reference in a solution (power-apps/maker/data-platform/create-connection-reference)"
+
+  - id: dataverse-optimistic-concurrency
+    domain: dataverse
+    title: Optimistic concurrency is opt-in per request
+    constraint: >
+      Dataverse detects concurrent-edit conflicts only when the caller opts in per write
+      (ConcurrencyBehavior=IfRowVersionMatches on the SDK, or an If-Match ETag/RowVersion header on the
+      Web API). Without it, updates and deletes are last-write-wins. The check is available only on
+      custom tables and out-of-box tables enabled for offline sync.
+    why_it_bites: >
+      An integration or plug-in that reads a row and later writes it back with no concurrency flag
+      silently overwrites whatever changed in between - the write succeeds, no error, the lost update is
+      invisible. And code that does request the check but runs against a standard table not enabled for
+      offline sync throws OptimisticConcurrencyNotEnabled, so the protection a design assumed is absent.
+    severity_when_silent: major
+    severity_when_violated: critical
+    source: "MS Learn: Optimistic concurrency (power-apps/developer/data-platform/optimistic-concurrency)"
+
+  - id: dataverse-choice-integer-value
+    domain: dataverse
+    title: Choice values are stored as integers, not labels
+    constraint: >
+      A choice (option set) column stores an integer with a separate localized label, and an admin can
+      relabel an option without changing its value. Compare and branch on the integer value, never the
+      label text - label comparisons break under a different UI language or after a relabel (and in
+      canvas apps are often non-delegable). The same option also carries different integers across local
+      vs global sets and across solutions (each solution adds an option-value prefix), so do not
+      hardcode integers across environments either.
+    why_it_bites: >
+      Logic keyed on the label works in the dev environment (English, current labels) and silently
+      returns wrong results elsewhere: a non-English user's rows do not match the hardcoded label, and a
+      relabel breaks every text comparison while the stored integer is unchanged - filters quietly miss
+      rows, branches take the wrong path, nothing errors.
+    severity_when_silent: major
+    severity_when_violated: critical
+    source: "MS Learn: Customize choices (Microsoft Dataverse) (power-apps/developer/data-platform/org-service/metadata-option-sets)"
+
+  - id: dataverse-row-size-limit
+    domain: dataverse
+    title: SQL 8KB in-row size limit on wide tables
+    constraint: >
+      A table's in-row columns must fit SQL Server's ~8,060-byte row limit (not extendable). It is a
+      byte budget, not a column count: each lookup adds 2-3 physical columns, currency 2-4; single-line
+      text and decimal count toward it, while multiline text, file, and image are stored off-row and
+      cost almost nothing.
+    why_it_bites: >
+      A wide "one big table" design builds fine until the Nth lookup/currency/text column, then creating
+      it or importing the solution fails with a cryptic SQL error ("row size ... exceeds the maximum
+      allowable ... 8060 bytes"). It usually surfaces as a broken managed-solution deploy into the target
+      org, not in the maker UI, because makers assume a high column ceiling and think another field is free.
+    severity_when_silent: major
+    severity_when_violated: critical
+    source: "MS Learn: Maximum row size exceeds the allowed maximum (troubleshoot/power-platform/dataverse/working-with-solutions/maximum-row-size-exceeds)"
+
+  - id: power-automate-run-duration
+    domain: power-automate
+    title: Single flow-run caps - duration, iterations, payload
+    constraint: >
+      A single cloud flow run is hard-capped: max run duration 30 days (pending approvals count), an
+      Apply to each processes at most ~100,000 items (5,000 on the low profile), an Until loop stops at
+      5,000 iterations (default 60), and a single action payload is limited to 100 MB (1 GB only where
+      chunking is supported). Apply-to-each concurrency defaults to 1. Item/throughput caps are
+      plan-dependent documented defaults - verify against current MS Learn.
+    why_it_bites: >
+      A long orchestration modeled as one run fails at the cap. The silent one is the Until loop: it
+      exits at 5,000 iterations (or its timeout) whether or not its condition was met, reports success,
+      and downstream continues as if complete - a truncated result, not a failure. (An Apply to each
+      over the item cap, by contrast, fails loudly with "number of foreach items limit exceeded", so it
+      is noisy, not silent.) The fix is batching plus child flows, not one monolithic run.
+    severity_when_silent: major
+    severity_when_violated: critical
+    source: "MS Learn: Limits of automated, scheduled, and instant flows (power-automate/limits-and-config)"
+
+  - id: alm-solution-layering
+    domain: alm
+    title: Solution layering - unmanaged wins, delete destroys data
+    constraint: >
+      Components resolve through a layer stack: the single unmanaged layer sits on top of all managed
+      layers, so any unmanaged customization wins over every managed solution beneath it; among managed
+      solutions the last imported wins. Deleting a managed solution removes all of its components and the
+      data in its custom tables and columns.
+    why_it_bites: >
+      An unmanaged edit in the target environment (or an active unmanaged layer left behind) silently
+      overrides an imported managed fix, so the corrected component never takes effect in prod - the
+      classic "works in dev, not in prod" - and a plain managed import does not touch the unmanaged
+      layer, so it persists. Overwrite Customizations does not fully clear it (it skips merge-behavior
+      components like forms/sitemap/ribbon and any component with another managed solution layered on
+      top). The other lever is worse: deleting a managed solution to "clean up" irreversibly removes its
+      components and their data.
+    severity_when_silent: major
+    severity_when_violated: critical
+    source: "MS Learn: Solution layers in Power Platform (power-apps/maker/data-platform/solution-layers); Update a solution (power-apps/maker/data-platform/update-solutions) for the delete-removes-data behavior"
+
+  - id: dataverse-alternate-keys
+    domain: dataverse
+    title: Alternate key activates asynchronously and can silently fail
+    constraint: >
+      A table supports a limited number of alternate keys (documented max 10 at time of writing, raised
+      from 5). Each key's uniqueness index is built by a background job, so the key is unusable until its
+      status reaches Active - it passes through Pending / In Progress and lands in Failed if existing
+      rows already violate the uniqueness it demands.
+    why_it_bites: >
+      An Upsert or keyed reference (?altkey=...) only works once the key is Active. On solution import or
+      a bulk-loaded table the index build takes time and fails on pre-existing duplicate data, leaving
+      the key Failed; meanwhile uniqueness is not enforced and keyed operations error, and nothing
+      surfaces unless someone inspects the system job and runs ReactivateEntityKey after cleaning data.
+    severity_when_silent: major
+    severity_when_violated: critical
+    source: "MS Learn: Work with alternate keys (Microsoft Dataverse) (power-apps/developer/data-platform/define-alternate-keys-entity)"
+
+  - id: security-sharing-scale
+    domain: security
+    title: Per-record sharing bloats POA and slows security checks
+    constraint: >
+      Every record share (GrantAccess, share-to-team, access-team membership, cascade share) writes a
+      row to the PrincipalObjectAccess (POA) table, which Dataverse joins to authorize access to records
+      a user does not own by role. Sharing many records with many principals grows POA super-linearly
+      and slows retrieves. Microsoft documents no fixed threshold but calls sharing "a less performant
+      way of controlling access."
+    why_it_bites: >
+      The failure is a silent, gradual, environment-wide read slowdown, not an error: retrieves joining
+      a large POA table get slower for everyone, with no warning at share time. It is hard to unwind -
+      direct POA-row deletion is unsupported; you shrink it only by revoking access or changing the
+      model. A GrantAccess-in-a-loop plug-in looks fine in a small test org and degrades the whole
+      environment at production volume.
+    severity_when_silent: major
+    severity_when_violated: critical
+    source: "MS Learn: Manage PrincipalObjectAccess storage (power-platform/admin/manage-principalobjectaccess-storage)"
+
+  - id: licensing-premium-connectors
+    domain: licensing
+    title: Premium/custom/HTTP connectors and Dataverse need a premium license
+    constraint: >
+      An app or flow that touches any premium connector (SQL, Azure, Dynamics 365, HTTP), a custom
+      connector, Dataverse, or an on-prem gateway carries a Premium designation and requires every end
+      user to hold a standalone Power Apps/Automate per-app or per-user plan. Office/Microsoft 365
+      seeded licenses cover only standard connectors.
+    why_it_bites: >
+      License designation inspects only the app's own connectors, so a Standard-designated app that
+      calls a flow using a premium connector still shows "Standard" while its users actually need
+      Premium. The team ships believing seeded Office licenses suffice, then at go-live users without a
+      premium plan hit a runtime license block - or the org silently accrues a licensing liability that
+      surfaces at audit.
+    severity_when_silent: major
+    severity_when_violated: critical
+    source: "MS Learn: How to check license designation for an app (power-apps/maker/canvas-apps/license-designation); Licensing overview for Microsoft Power Platform (power-platform/admin/pricing-billing-skus)"

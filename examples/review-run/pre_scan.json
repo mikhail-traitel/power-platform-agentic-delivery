@@ -1,0 +1,18 @@
+{
+  "document": "examples/sample-design.md",
+  "deterministic_findings": [
+    {
+      "id": "PS-placeholder-17",
+      "severity": "major",
+      "reviewer": "pre-scan",
+      "location": "line 17",
+      "description": "Unresolved placeholder / TBD in the document.",
+      "evidence": "\"Approval threshold: TBD.\""
+    }
+  ],
+  "rubric_pre_checks": {
+    "injection_canaries": [],
+    "near_duplicate_windows": [],
+    "section_count": 5
+  }
+}

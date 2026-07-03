@@ -1,0 +1,21 @@
+# Node
+node_modules/
+npm-debug.log*
+pnpm-debug.log*
+
+# Python
+__pycache__/
+*.pyc
+
+# Claude Code local state
+.claude/settings.local.json
+.claude/.session/
+
+# Env / secrets (never commit)
+*.env
+.env
+.env.*
+
+# OS
+.DS_Store
+Thumbs.db

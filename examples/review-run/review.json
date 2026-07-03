@@ -1,0 +1,80 @@
+{
+  "document": "examples/sample-design.md",
+  "reviewer": "synthesis",
+  "findings": [
+    {
+      "id": "F1",
+      "severity": "critical",
+      "reviewer": "platform",
+      "location": "Coordinator list screen",
+      "description": "The coordinator list claims to return the complete regional set, but a filter on a choice column plus region is not guaranteed delegable; past the delegation cap the gallery silently shows a partial set, so the result is wrong, not just slow.",
+      "evidence": "\"The gallery shows the full set of matching events.\"",
+      "platform_term": "canvas-delegation-limit",
+      "evidence_grounded": true
+    },
+    {
+      "id": "F2",
+      "severity": "major",
+      "reviewer": "platform",
+      "location": "Data model",
+      "description": "The design mandates client-side encryption of every column before write, which Dataverse does not support and which would break server-side search, views, and plugins.",
+      "evidence": "The data model states \"all columns are encrypted on the client before they are written to Dataverse\", which is not a supported pattern.",
+      "platform_term": "dataverse-field-encryption",
+      "evidence_grounded": false,
+      "original_severity": "critical",
+      "demotion_reason": "evidence not grounded in document (LCS 0.23 < 0.65)"
+    },
+    {
+      "id": "F3",
+      "severity": "major",
+      "reviewer": "pre-scan",
+      "location": "line 17",
+      "description": "Unresolved placeholder / TBD in the document.",
+      "evidence": "\"Approval threshold: TBD.\"",
+      "evidence_grounded": true
+    },
+    {
+      "id": "F4",
+      "severity": "major",
+      "reviewer": "consistency",
+      "location": "Manager view",
+      "description": "Non-manager restriction is described as a UI hide, not a data-layer control; a hidden control still returns rows to anyone who queries the table directly. Enforce with a security role or field-level security, not the client.",
+      "evidence": "\"Access is hidden in the UI for non-managers.\"",
+      "evidence_grounded": true
+    },
+    {
+      "id": "F5",
+      "severity": "major",
+      "reviewer": "consistency",
+      "location": "Coordinator list screen",
+      "description": "The approval threshold that gates submission is left unspecified, so the gate rule cannot be built or tested and downstream stages will guess at it.",
+      "evidence": "\"Approval threshold: TBD.\"",
+      "evidence_grounded": true
+    },
+    {
+      "id": "F6",
+      "severity": "major",
+      "reviewer": "platform",
+      "location": "Notes",
+      "description": "Filtering a choice column by its localized label is fragile across languages and relabels and is typically non-delegable; compare the underlying choice value instead of the display text.",
+      "evidence": "\"The status filter uses a text comparison on the status label so it reads naturally.\"",
+      "platform_term": "dataverse-choice-integer-value",
+      "evidence_grounded": true
+    },
+    {
+      "id": "F7",
+      "severity": "minor",
+      "reviewer": "consistency",
+      "location": "Manager view",
+      "description": "Managers are granted read across every region with no stated need-to-know scoping; confirm cross-region visibility is actually required rather than assumed.",
+      "evidence": "The design says \"Managers get a read only view across regions\" without justifying the cross-region scope.",
+      "evidence_grounded": true
+    }
+  ],
+  "verdict": "REJECT",
+  "counts": {
+    "critical": 1,
+    "major": 5,
+    "minor": 1
+  }
+}

@@ -1,0 +1,33 @@
+{
+  "document": "examples/sample-design.md",
+  "reviewer": "platform",
+  "findings": [
+    {
+      "id": "P1",
+      "severity": "critical",
+      "reviewer": "platform",
+      "location": "Coordinator list screen",
+      "description": "The coordinator list claims to return the complete regional set, but a filter on a choice column plus region is not guaranteed delegable; past the delegation cap the gallery silently shows a partial set, so the result is wrong, not just slow.",
+      "evidence": "\"The gallery shows the full set of matching events.\"",
+      "platform_term": "canvas-delegation-limit"
+    },
+    {
+      "id": "P2",
+      "severity": "major",
+      "reviewer": "platform",
+      "location": "Notes",
+      "description": "Filtering a choice column by its localized label is fragile across languages and relabels and is typically non-delegable; compare the underlying choice value instead of the display text.",
+      "evidence": "\"The status filter uses a text comparison on the status label so it reads naturally.\"",
+      "platform_term": "dataverse-choice-integer-value"
+    },
+    {
+      "id": "P3",
+      "severity": "critical",
+      "reviewer": "platform",
+      "location": "Data model",
+      "description": "The design mandates client-side encryption of every column before write, which Dataverse does not support and which would break server-side search, views, and plugins.",
+      "evidence": "The data model states \"all columns are encrypted on the client before they are written to Dataverse\", which is not a supported pattern.",
+      "platform_term": "dataverse-field-encryption"
+    }
+  ]
+}

@@ -1,0 +1,15 @@
+{
+  "name": "power-platform-agentic-delivery",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Delivery harness for AI-assisted Power Platform work: SDLC stage-agents, an adversarial design-review pipeline, deterministic hooks, a fault-first test designer, and a platform constraint catalog.",
+  "license": "MIT",
+  "scripts": {
+    "test:hooks": "node test/run-hook-tests.js",
+    "test:review": "node test/run-review-tests.js",
+    "test": "npm run test:hooks && npm run test:review"
+  },
+  "dependencies": {
+    "acorn": "^8.11.3"
+  }
+}

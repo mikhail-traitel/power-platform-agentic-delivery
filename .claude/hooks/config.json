@@ -1,0 +1,26 @@
+{
+  "consoleAllowedInFunction": "bootstrapLogging",
+  "consoleMethods": ["log", "error", "warn"],
+  "suggestedLogger": "your app logger",
+
+  "protectedReviewerAgents": [
+    "design-reviewer",
+    "review-consistency",
+    "review-alignment",
+    "review-platform"
+  ],
+  "evalDataPatterns": [
+    "review-workspace",
+    "design-review[/\\\\]evals",
+    "-resolution-\\d+\\.json$",
+    "grade_.*\\.py$",
+    "compute_metrics\\.py$",
+    "review_metrics.*\\.csv$"
+  ],
+  "protectedSkillDirs": [
+    "skills[/\\\\]design-review",
+    "skills[/\\\\]review-consistency",
+    "skills[/\\\\]review-alignment",
+    "skills[/\\\\]review-platform"
+  ]
+}
