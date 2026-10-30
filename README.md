@@ -1,6 +1,6 @@
 # Power Platform Agentic Delivery
 
-[![CI](https://github.com/miketraytel/power-platform-agentic-delivery/actions/workflows/ci.yml/badge.svg)](https://github.com/miketraytel/power-platform-agentic-delivery/actions/workflows/ci.yml)
+[![CI](https://github.com/mikhail-traitel/power-platform-agentic-delivery/actions/workflows/ci.yml/badge.svg)](https://github.com/mikhail-traitel/power-platform-agentic-delivery/actions/workflows/ci.yml)
 
 A **delivery harness for AI-assisted Microsoft Power Platform work** - skills, hooks, review gates,
 and a constraint catalog wrapped around a set of agents spanning the software development lifecycle
@@ -22,9 +22,8 @@ fast but inconsistent.
 > generic and sourced from public Microsoft Learn documentation and general Power Platform practice.
 > The example schema uses a neutral `sample_` prefix; my other repos model the same fictional
 > Contoso events domain under an `evt_` publisher prefix - see
-> [dataverse-plugin-patterns](https://github.com/miketraytel/dataverse-plugin-patterns),
-> [powerplatform-webresource-patterns](https://github.com/miketraytel/powerplatform-webresource-patterns),
-> and [power-platform-events-portfolio](https://github.com/miketraytel/power-platform-events-portfolio).
+> [powerplatform-webresource-patterns](https://github.com/mikhail-traitel/powerplatform-webresource-patterns)
+> and [power-platform-events-portfolio](https://github.com/mikhail-traitel/power-platform-events-portfolio).
 
 ## Why
 
